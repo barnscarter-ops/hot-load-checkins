@@ -1,0 +1,6 @@
+Gerdau App
+supabase Project:
+Name- Gerdau
+Password- HDkDfNK6sdwHczJq
+Project ID- mbhissbylmefdhpmtwhz
+API- sb_secret_NfV4S1uycIXDXjd8t_Ye5A_5IlwPBUo

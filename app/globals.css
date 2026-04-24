@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+:root {
+  --background: #eef3f7;
+  --foreground: #112537;
+  --ink: #17324a;
+  --ink-strong: #0f2637;
+  --muted: #51697d;
+  --muted-soft: #7d90a0;
+  --accent: #a04d1f;
+  --accent-soft: #d9a27f;
+  --accent-ring: rgba(160, 77, 31, 0.14);
+  --signal: #1d6f6a;
+  --signal-strong: #155953;
+  --panel: rgba(251, 253, 255, 0.9);
+  --panel-soft: #eef2f5;
+  --border: #d7dee7;
+  --warn: #9a5a12;
+  --warn-bg: #fff2de;
+  --warn-border: #f0c58f;
+  --danger: #a63d2a;
+  --danger-bg: #ffe7e3;
+  --danger-border: #efb1a6;
+  --success: #1b6d55;
+  --success-bg: #ddf6ec;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-manrope);
+  --font-mono: var(--font-space-grotesk);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background:
+    radial-gradient(circle at top left, rgba(29, 111, 106, 0.08), transparent 34%),
+    radial-gradient(circle at top right, rgba(160, 77, 31, 0.12), transparent 36%),
+    linear-gradient(180deg, #f7fafc, #eaf1f6);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-manrope), sans-serif;
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-space-grotesk), sans-serif;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
