@@ -42,8 +42,8 @@ export function CheckInPreviewModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(12,28,45,0.56)] p-3 sm:items-center sm:p-6">
-      <div className="max-h-[92vh] w-full max-w-3xl overflow-hidden rounded-[2rem] border border-white/20 bg-[color:var(--panel)] shadow-[0_30px_90px_rgba(12,28,45,0.32)]">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(12,28,45,0.56)] px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 sm:items-center sm:p-6">
+      <div className="flex max-h-[calc(100dvh-1.5rem-env(safe-area-inset-bottom))] w-full max-w-3xl flex-col overflow-hidden rounded-[2rem] border border-white/20 bg-[color:var(--panel)] shadow-[0_30px_90px_rgba(12,28,45,0.32)] sm:max-h-[calc(100dvh-3rem)]">
         <div className="flex items-start justify-between gap-4 border-b border-[color:var(--border)] px-5 py-4 sm:px-6">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--accent)]">
@@ -66,7 +66,7 @@ export function CheckInPreviewModal({
           </button>
         </div>
 
-        <div className="max-h-[calc(92vh-6rem)] overflow-y-auto px-5 py-5 sm:px-6">
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
           {loading ? (
             <div className="rounded-[1.6rem] border border-[color:var(--border)] bg-[color:var(--panel-soft)] px-5 py-8 text-sm text-[color:var(--muted)]">
               Loading submitted check-in preview...
@@ -76,9 +76,8 @@ export function CheckInPreviewModal({
               {error}
             </div>
           ) : checkIn ? (
-            <div className="space-y-5">
+            <div className="space-y-5 pb-4">
               <CheckInPreviewCard checkIn={checkIn} />
-              <CheckInActions checkIn={checkIn} onDismiss={onDismiss} />
             </div>
           ) : (
             <div className="rounded-[1.6rem] border border-[color:var(--border)] bg-[color:var(--panel-soft)] px-5 py-8 text-sm text-[color:var(--muted)]">
@@ -86,6 +85,12 @@ export function CheckInPreviewModal({
             </div>
           )}
         </div>
+
+        {checkIn && !loading && !error ? (
+          <div className="sticky bottom-0 border-t border-[color:var(--border)] bg-[linear-gradient(180deg,rgba(247,249,251,0.92),rgba(255,255,255,0.98))] px-5 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4 shadow-[0_-16px_32px_rgba(12,28,45,0.08)] backdrop-blur sm:px-6 sm:pb-5">
+            <CheckInActions checkIn={checkIn} onDismiss={onDismiss} />
+          </div>
+        ) : null}
       </div>
     </div>
   );

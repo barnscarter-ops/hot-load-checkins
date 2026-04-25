@@ -139,12 +139,12 @@ export function CheckInActions({ checkIn, onDismiss }: CheckInActionsProps) {
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-3">
+      <div className="grid gap-3 sm:flex sm:flex-wrap">
         {onDismiss ? (
           <button
             type="button"
             onClick={onDismiss}
-            className="inline-flex min-h-11 items-center justify-center rounded-full border border-[color:var(--border)] bg-white px-4 text-sm font-semibold text-[color:var(--ink)] transition hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-[color:var(--border)] bg-white px-4 text-sm font-semibold text-[color:var(--ink)] transition hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] sm:w-auto"
           >
             Dismiss
           </button>
@@ -153,7 +153,7 @@ export function CheckInActions({ checkIn, onDismiss }: CheckInActionsProps) {
           type="button"
           onClick={handleDownload}
           disabled={isDownloading || isSharing}
-          className="inline-flex min-h-11 items-center justify-center rounded-full bg-[color:var(--ink)] px-5 text-sm font-semibold text-white transition hover:bg-[color:var(--ink-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[color:var(--ink)] px-5 text-sm font-semibold text-white transition hover:bg-[color:var(--ink-strong)] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >
           {isDownloading ? "Downloading..." : "Download Excel"}
         </button>
@@ -161,7 +161,7 @@ export function CheckInActions({ checkIn, onDismiss }: CheckInActionsProps) {
           type="button"
           onClick={handleShare}
           disabled={isDownloading || isSharing}
-          className="inline-flex min-h-11 items-center justify-center rounded-full border border-[color:var(--accent-soft)] bg-[color:var(--panel-soft)] px-5 text-sm font-semibold text-[color:var(--accent)] transition hover:border-[color:var(--accent)] disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-[color:var(--accent-soft)] bg-[color:var(--panel-soft)] px-5 text-sm font-semibold text-[color:var(--accent)] transition hover:border-[color:var(--accent)] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >
           {isSharing ? "Sharing..." : "Share"}
         </button>
