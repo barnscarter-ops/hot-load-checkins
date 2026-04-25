@@ -139,8 +139,7 @@ function buildDraftPayload(checkIn: CheckInRecord): ExtractResponsePayload {
 }
 
 export function HotLoadCheckInApp() {
-  const imageUploadInputId = useId();
-  const imageCameraInputId = useId();
+  const imageInputId = useId();
   const [files, setFiles] = useState<File[]>([]);
   const [extractRequestId, setExtractRequestId] = useState(() => crypto.randomUUID());
   const [extractError, setExtractError] = useState<ExtractErrorState | null>(null);
@@ -456,7 +455,7 @@ export function HotLoadCheckInApp() {
       missingRequired={missingRequired}
       manuallyEditedFields={manuallyEditedFields}
       isSubmitting={submitting}
-      imageInputId={imageUploadInputId}
+      imageInputId={imageInputId}
       submitFailureStage={
         submitFailureStage === "excel_generation" ||
         submitFailureStage === "email_send" ||
@@ -489,8 +488,7 @@ export function HotLoadCheckInApp() {
     <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
       <div className="space-y-6">
         <ImagePicker
-          cameraInputId={imageCameraInputId}
-          uploadInputId={imageUploadInputId}
+          inputId={imageInputId}
           previews={previews}
           disabled={extracting || submitting}
           isExtracting={extracting}

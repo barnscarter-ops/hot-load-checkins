@@ -4,8 +4,7 @@ import { MAX_IMAGE_COUNT } from "@/lib/check-ins/constants";
 import { cn } from "@/lib/utils";
 
 interface ImagePickerProps {
-  cameraInputId: string;
-  uploadInputId: string;
+  inputId: string;
   previews: string[];
   disabled?: boolean;
   isExtracting: boolean;
@@ -20,8 +19,7 @@ interface ImagePickerProps {
 }
 
 export function ImagePicker({
-  cameraInputId,
-  uploadInputId,
+  inputId,
   previews,
   disabled,
   isExtracting,
@@ -62,20 +60,7 @@ export function ImagePicker({
         )}
       >
         <input
-          id={cameraInputId}
-          className="hidden"
-          type="file"
-          accept="image/*"
-          capture="environment"
-          disabled={disabled}
-          onChange={(event) => {
-            handleFileSelection(event.target.files, () => {
-              event.currentTarget.value = "";
-            });
-          }}
-        />
-        <input
-          id={uploadInputId}
+          id={inputId}
           className="hidden"
           type="file"
           accept="image/*"
@@ -87,35 +72,20 @@ export function ImagePicker({
             });
           }}
         />
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <label
-            htmlFor={cameraInputId}
-            className={cn(
-              "inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-[color:var(--accent)] shadow-sm transition hover:border-[color:var(--accent)] hover:bg-[color:var(--panel)]",
-              disabled && "pointer-events-none",
-            )}
-          >
-            Take Photo
-          </label>
-          <label
-            htmlFor={uploadInputId}
-            className={cn(
-              "inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border border-[color:var(--accent-soft)] bg-white px-4 py-2 text-sm font-semibold text-[color:var(--accent)] shadow-sm transition hover:border-[color:var(--accent)] hover:bg-[color:var(--panel)]",
-              disabled && "pointer-events-none",
-            )}
-          >
-            Upload From Gallery
-          </label>
-        </div>
+        <label
+          htmlFor={inputId}
+          className={cn(
+            "inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-[color:var(--accent)] shadow-sm transition hover:border-[color:var(--accent)] hover:bg-[color:var(--panel)]",
+            disabled && "pointer-events-none",
+          )}
+        >
+          Upload / Capture Images
+        </label>
         <p className="mt-4 max-w-sm text-sm leading-6 text-[color:var(--muted)]">
-          Take a new paperwork photo or pick one or more existing images from the phone
-          gallery or files.
+          Choose from photo library, files, or camera.
         </p>
         <p className="mt-2 text-xs uppercase tracking-[0.24em] text-[color:var(--muted-soft)]">
-          Camera + Gallery Upload
-        </p>
-        <p className="mt-1 text-xs uppercase tracking-[0.24em] text-[color:var(--muted-soft)]">
-          Up to {MAX_IMAGE_COUNT} images from gallery where supported
+          Up to {MAX_IMAGE_COUNT} images where supported
         </p>
       </div>
 
@@ -130,26 +100,15 @@ export function ImagePicker({
                 Retake or replace from here without leaving the screen.
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <label
-                htmlFor={cameraInputId}
-                className={cn(
-                  "inline-flex min-h-11 items-center justify-center rounded-full border border-[color:var(--accent-soft)] bg-[color:var(--warn-bg)] px-4 text-sm font-semibold text-[color:var(--accent)] transition hover:border-[color:var(--accent)] hover:bg-white",
-                  disabled && "pointer-events-none opacity-60",
-                )}
-              >
-                Take Photo
-              </label>
-              <label
-                htmlFor={uploadInputId}
-                className={cn(
-                  "inline-flex min-h-11 items-center justify-center rounded-full border border-[color:var(--accent-soft)] bg-[color:var(--warn-bg)] px-4 text-sm font-semibold text-[color:var(--accent)] transition hover:border-[color:var(--accent)] hover:bg-white",
-                  disabled && "pointer-events-none opacity-60",
-                )}
-              >
-                Upload More
-              </label>
-            </div>
+            <label
+              htmlFor={inputId}
+              className={cn(
+                "inline-flex min-h-11 items-center justify-center rounded-full border border-[color:var(--accent-soft)] bg-[color:var(--warn-bg)] px-4 text-sm font-semibold text-[color:var(--accent)] transition hover:border-[color:var(--accent)] hover:bg-white",
+                disabled && "pointer-events-none opacity-60",
+              )}
+            >
+              Upload Images
+            </label>
           </div>
 
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">

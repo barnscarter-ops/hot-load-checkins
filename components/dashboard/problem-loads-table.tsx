@@ -43,6 +43,7 @@ export function ProblemLoadsTable({ rows }: ProblemLoadsTableProps) {
                 <th className="border-b border-[color:var(--border)] px-3 py-3">Export Status</th>
                 <th className="border-b border-[color:var(--border)] px-3 py-3">Email Status</th>
                 <th className="border-b border-[color:var(--border)] px-3 py-3">Submitted At</th>
+                <th className="border-b border-[color:var(--border)] px-3 py-3">Sheet</th>
               </tr>
             </thead>
             <tbody>
@@ -82,6 +83,14 @@ export function ProblemLoadsTable({ rows }: ProblemLoadsTableProps) {
                   </td>
                   <td className="border-b border-[color:var(--border)] px-3 py-3 text-[color:var(--muted)]">
                     {formatSubmittedAt(row.submittedAt)}
+                  </td>
+                  <td className="border-b border-[color:var(--border)] px-3 py-3">
+                    <a
+                      href={`/api/check-ins/${row.id}/workbook`}
+                      className="inline-flex min-h-10 items-center justify-center rounded-full border border-[color:var(--border)] bg-white px-3 text-xs font-semibold text-[color:var(--ink)] transition hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
+                    >
+                      Download Sheet
+                    </a>
                   </td>
                 </tr>
               ))}

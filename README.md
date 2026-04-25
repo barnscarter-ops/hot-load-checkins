@@ -105,6 +105,8 @@ Apply the schema in Supabase SQL Editor, then set the matching environment varia
   Loads an existing draft or submitted record with images and review flags.
 - `GET /api/check-ins/master-export`
   Generates a fresh master workbook directly from submitted Postgres records with no stored master file mutation.
+- `GET /api/check-ins/[id]/workbook`
+  Downloads the individual per-truck workbook for a submitted check-in. The route reuses the stored workbook when available and regenerates it from the submitted Postgres record when storage is missing.
 - `POST /api/check-ins/submit`
   Validates required fields, generates the per-truck workbook, stores it, records the master export route, sends email with attachments, and finalizes the check-in.
 - `GET /api/check-ins/recent`
@@ -275,7 +277,18 @@ One shared helper layer now standardizes quantity, date, time, timezone, and dur
 7. Confirm the row shows `status = submitted`, `review_status = reviewed`, `submission_status = succeeded`, `export_status = succeeded`, and `email_status = succeeded`.
 8. Download the master export and confirm it builds from submitted Postgres rows.
 9. Visit `/recovery` and confirm the recent check-in shows the latest statuses, `error_message`, and `submitted_at`.
+10. Use `Download Sheet` from the dashboard tables or `Download Check-In Sheet` from `/recovery` to open the individual workbook for a submitted record.
 10. If you want to exercise failure recovery, temporarily break email or export configuration, submit once, and confirm the approved row stays saved while the failed step is marked clearly for retry.
+
+## Individual Workbook Downloads
+
+Users can download the per-check-in Excel workbook from:
+
+- `/dashboard` via the `Download Sheet` action in `Top Slow Loads`
+- `/dashboard` via the `Download Sheet` action in `Problem Loads`
+- `/recovery` via the `Download Check-In Sheet` action on submitted records
+
+The download route is `GET /api/check-ins/[id]/workbook`. It serves the stored workbook when available and regenerates the workbook from the submitted Postgres record when the stored file is missing.
 
 ## Upload / Extract Troubleshooting
 

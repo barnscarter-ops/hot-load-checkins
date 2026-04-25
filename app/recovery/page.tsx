@@ -104,6 +104,17 @@ export default async function RecoveryPage() {
                     </p>
                   </div>
                 </div>
+
+                {checkIn.status === "submitted" ? (
+                  <div className="mt-4">
+                    <a
+                      href={`/api/check-ins/${checkIn.id}/workbook`}
+                      className="inline-flex min-h-11 items-center justify-center rounded-full border border-[color:var(--border)] bg-white px-4 text-sm font-semibold text-[color:var(--ink)] transition hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
+                    >
+                      Download Check-In Sheet
+                    </a>
+                  </div>
+                ) : null}
               </article>
             ))
           )}

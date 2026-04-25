@@ -22,7 +22,7 @@ import type {
   MasterExportRow,
   SingleCheckInWorkbookInput,
 } from "@/lib/check-ins/types";
-import { safeSlug } from "@/lib/utils";
+import { safeSlug, sanitizeFileName } from "@/lib/utils";
 
 const BORDER_COLOR = "FFD3DCE6";
 const OUTLINE_COLOR = "FF94A0AE";
@@ -501,6 +501,11 @@ export function buildTruckWorkbookPath(checkInId: string, fields: CheckInFields)
   const ticket = safeSlug(fields.ticketNumber || checkInId);
   const vendor = safeSlug(fields.vendor || "vendor");
   return `exports/check-ins/${checkInId}/${ticket}-${vendor}.xlsx`;
+}
+
+export function buildTruckWorkbookDownloadFileName(fields: CheckInFields, checkInId: string) {
+  const ticket = sanitizeFileName(fields.ticketNumber || checkInId).replace(/\.xlsx$/i, "");
+  return `hot-load-check-in-ticket-${ticket || "check-in"}.xlsx`;
 }
 
 export function buildMasterExportFileName() {
