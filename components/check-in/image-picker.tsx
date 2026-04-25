@@ -4,7 +4,8 @@ import { MAX_IMAGE_COUNT } from "@/lib/check-ins/constants";
 import { cn } from "@/lib/utils";
 
 interface ImagePickerProps {
-  inputId: string;
+  cameraInputId: string;
+  uploadInputId: string;
   previews: string[];
   disabled?: boolean;
   isExtracting: boolean;
@@ -19,7 +20,8 @@ interface ImagePickerProps {
 }
 
 export function ImagePicker({
-  inputId,
+  cameraInputId,
+  uploadInputId,
   previews,
   disabled,
   isExtracting,
@@ -28,6 +30,12 @@ export function ImagePicker({
   onFilesSelected,
   onExtract,
 }: ImagePickerProps) {
+  function handleFileSelection(fileList: FileList | null, resetInput: () => void) {
+    const nextFiles = Array.from(fileList ?? []);
+    onFilesSelected(nextFiles.slice(0, MAX_IMAGE_COUNT));
+    resetInput();
+  }
+
   return (
     <section
       id="image-capture"
@@ -47,37 +55,69 @@ export function ImagePicker({
         </span>
       </div>
 
-      <label
-        htmlFor={inputId}
+      <div
         className={cn(
-          "mt-5 flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-[color:var(--accent-soft)] bg-[color:var(--panel-soft)] px-5 text-center transition hover:border-[color:var(--accent)] hover:bg-white",
-          disabled && "cursor-not-allowed opacity-60",
+          "mt-5 flex min-h-44 flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-[color:var(--accent-soft)] bg-[color:var(--panel-soft)] px-5 text-center",
+          disabled && "opacity-60",
         )}
       >
         <input
-          id={inputId}
+          id={cameraInputId}
           className="hidden"
           type="file"
           accept="image/*"
           capture="environment"
+          disabled={disabled}
+          onChange={(event) => {
+            handleFileSelection(event.target.files, () => {
+              event.currentTarget.value = "";
+            });
+          }}
+        />
+        <input
+          id={uploadInputId}
+          className="hidden"
+          type="file"
+          accept="image/*"
           multiple
           disabled={disabled}
           onChange={(event) => {
-            const nextFiles = Array.from(event.target.files ?? []);
-            onFilesSelected(nextFiles.slice(0, MAX_IMAGE_COUNT));
+            handleFileSelection(event.target.files, () => {
+              event.currentTarget.value = "";
+            });
           }}
         />
-        <span className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[color:var(--accent)] shadow-sm">
-          Tap to capture or upload
-        </span>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <label
+            htmlFor={cameraInputId}
+            className={cn(
+              "inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-[color:var(--accent)] shadow-sm transition hover:border-[color:var(--accent)] hover:bg-[color:var(--panel)]",
+              disabled && "pointer-events-none",
+            )}
+          >
+            Take Photo
+          </label>
+          <label
+            htmlFor={uploadInputId}
+            className={cn(
+              "inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border border-[color:var(--accent-soft)] bg-white px-4 py-2 text-sm font-semibold text-[color:var(--accent)] shadow-sm transition hover:border-[color:var(--accent)] hover:bg-[color:var(--panel)]",
+              disabled && "pointer-events-none",
+            )}
+          >
+            Upload From Gallery
+          </label>
+        </div>
         <p className="mt-4 max-w-sm text-sm leading-6 text-[color:var(--muted)]">
-          Select one or more paperwork images. Matt can open the camera directly from this
-          picker and snap multiple pages before extraction.
+          Take a new paperwork photo or pick one or more existing images from the phone
+          gallery or files.
         </p>
         <p className="mt-2 text-xs uppercase tracking-[0.24em] text-[color:var(--muted-soft)]">
-          Up to {MAX_IMAGE_COUNT} images
+          Camera + Gallery Upload
         </p>
-      </label>
+        <p className="mt-1 text-xs uppercase tracking-[0.24em] text-[color:var(--muted-soft)]">
+          Up to {MAX_IMAGE_COUNT} images from gallery where supported
+        </p>
+      </div>
 
       {previews.length > 0 ? (
         <>
@@ -90,15 +130,26 @@ export function ImagePicker({
                 Retake or replace from here without leaving the screen.
               </p>
             </div>
-            <label
-              htmlFor={inputId}
-              className={cn(
-                "inline-flex min-h-11 items-center justify-center rounded-full border border-[color:var(--accent-soft)] bg-[color:var(--warn-bg)] px-4 text-sm font-semibold text-[color:var(--accent)] transition hover:border-[color:var(--accent)] hover:bg-white",
-                disabled && "pointer-events-none opacity-60",
-              )}
-            >
-              Retake / Replace
-            </label>
+            <div className="flex flex-wrap gap-2">
+              <label
+                htmlFor={cameraInputId}
+                className={cn(
+                  "inline-flex min-h-11 items-center justify-center rounded-full border border-[color:var(--accent-soft)] bg-[color:var(--warn-bg)] px-4 text-sm font-semibold text-[color:var(--accent)] transition hover:border-[color:var(--accent)] hover:bg-white",
+                  disabled && "pointer-events-none opacity-60",
+                )}
+              >
+                Take Photo
+              </label>
+              <label
+                htmlFor={uploadInputId}
+                className={cn(
+                  "inline-flex min-h-11 items-center justify-center rounded-full border border-[color:var(--accent-soft)] bg-[color:var(--warn-bg)] px-4 text-sm font-semibold text-[color:var(--accent)] transition hover:border-[color:var(--accent)] hover:bg-white",
+                  disabled && "pointer-events-none opacity-60",
+                )}
+              >
+                Upload More
+              </label>
+            </div>
           </div>
 
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
