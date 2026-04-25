@@ -1,4 +1,7 @@
-import Link from "next/link";
+"use client";
+
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
 import { buildDashboardHref } from "@/lib/dashboard/metrics";
 import type { DashboardFilterOptions, DashboardFilters } from "@/lib/dashboard/types";
@@ -8,85 +11,141 @@ interface FilterBarProps {
   options: DashboardFilterOptions;
 }
 
-const PRESETS: Array<{ label: string; preset: DashboardFilters["preset"] }> = [
-  { label: "Today", preset: "today" },
-  { label: "Last 7 Days", preset: "last7" },
-  { label: "Last 30 Days", preset: "last30" },
-];
-
 export function FilterBar({ filters, options }: FilterBarProps) {
-  const showEmployeeFilter = options.employees.length > 0 || Boolean(filters.employee);
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [formValues, setFormValues] = useState({
+    startDate: filters.startDate,
+    endDate: filters.endDate,
+    vendor: filters.vendor,
+    material: filters.material,
+    employee: filters.employee,
+  });
+
+  const presetButtons = useMemo(
+    () => [
+      {
+        label: "Today",
+        href: buildDashboardHref(filters, {
+          preset: "today",
+          startDate: filters.endDate,
+          endDate: filters.endDate,
+        }),
+        active: filters.preset === "today",
+      },
+      {
+        label: "Last 7 Days",
+        href: buildDashboardHref(filters, { preset: "last7" }),
+        active: filters.preset === "last7",
+      },
+      {
+        label: "Last 30 Days",
+        href: buildDashboardHref(filters, { preset: "last30" }),
+        active: filters.preset === "last30",
+      },
+    ],
+    [filters],
+  );
+
+  function navigateTo(href: string) {
+    startTransition(() => {
+      router.push(href);
+    });
+  }
+
+  function handleApplyFilters(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    navigateTo(
+      buildDashboardHref(filters, {
+        preset: "custom",
+        startDate: formValues.startDate,
+        endDate: formValues.endDate,
+        vendor: formValues.vendor,
+        material: formValues.material,
+        employee: formValues.employee,
+      }),
+    );
+  }
+
+  function handleRefresh() {
+    startTransition(() => {
+      router.refresh();
+    });
+  }
 
   return (
-    <section className="rounded-[2rem] border border-[color:var(--border)] bg-[color:var(--panel)] p-5 shadow-[0_22px_60px_rgba(12,28,45,0.14)] sm:p-6">
+    <section className="rounded-[2rem] border border-[color:var(--border)] bg-[color:var(--panel)] p-5 shadow-[0_18px_48px_rgba(12,28,45,0.12)] sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[color:var(--accent)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--accent)]">
             Filters
           </p>
-          <h2 className="mt-2 text-2xl font-semibold text-[color:var(--ink)]">
-            Load timing overview
+          <h2 className="mt-2 text-xl font-semibold text-[color:var(--ink)]">
+            Dashboard range and grouping
           </h2>
         </div>
-        <Link
-          href={buildDashboardHref(filters)}
-          className="inline-flex min-h-11 items-center justify-center rounded-full border border-[color:var(--border)] bg-white px-4 text-sm font-semibold text-[color:var(--ink)] transition hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
+        <button
+          type="button"
+          onClick={handleRefresh}
+          disabled={isPending}
+          className="inline-flex min-h-11 items-center justify-center rounded-full border border-[color:var(--border)] bg-white px-5 text-sm font-semibold text-[color:var(--ink)] transition hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Refresh
-        </Link>
+          {isPending ? "Refreshing..." : "Refresh"}
+        </button>
       </div>
 
-      <div className="mt-5 flex flex-wrap gap-2">
-        {PRESETS.map((preset) => (
-          <Link
-            key={preset.preset}
-            href={buildDashboardHref(filters, {
-              preset: preset.preset,
-            })}
+      <div className="mt-5 flex flex-wrap gap-3">
+        {presetButtons.map((preset) => (
+          <button
+            key={preset.label}
+            type="button"
+            onClick={() => navigateTo(preset.href)}
+            disabled={isPending}
             className={
-              filters.preset === preset.preset
-                ? "inline-flex min-h-10 items-center justify-center rounded-full bg-[color:var(--ink)] px-4 text-sm font-semibold text-white"
-                : "inline-flex min-h-10 items-center justify-center rounded-full border border-[color:var(--border)] bg-white px-4 text-sm font-semibold text-[color:var(--muted)] transition hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
+              preset.active
+                ? "inline-flex min-h-11 items-center justify-center rounded-full bg-[color:var(--ink)] px-4 text-sm font-semibold text-white"
+                : "inline-flex min-h-11 items-center justify-center rounded-full border border-[color:var(--border)] bg-white px-4 text-sm font-semibold text-[color:var(--ink)] transition hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
             }
           >
             {preset.label}
-          </Link>
+          </button>
         ))}
       </div>
 
-      <form
-        action="/dashboard"
-        method="get"
-        className={`mt-5 grid gap-4 ${showEmployeeFilter ? "xl:grid-cols-[1fr_1fr_1fr_1fr_1fr_auto]" : "xl:grid-cols-[1fr_1fr_1fr_1fr_auto]"}`}
-      >
-        <input type="hidden" name="preset" value="custom" />
-
+      <form className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5" onSubmit={handleApplyFilters}>
         <label className="grid gap-2 text-sm font-medium text-[color:var(--ink)]">
-          <span>Date Range Start</span>
+          Start Date
           <input
             type="date"
-            name="startDate"
-            defaultValue={filters.startDate}
-            className="min-h-11 rounded-2xl border border-[color:var(--border)] bg-white px-4 text-[color:var(--ink)] outline-none ring-0 focus:border-[color:var(--accent)]"
+            value={formValues.startDate}
+            onChange={(event) =>
+              setFormValues((current) => ({ ...current, startDate: event.target.value }))
+            }
+            className="min-h-11 rounded-2xl border border-[color:var(--border)] bg-white px-4 text-sm text-[color:var(--ink)] outline-none transition focus:border-[color:var(--accent)] focus:ring-2 focus:ring-[color:var(--accent-soft)]/40"
           />
         </label>
 
         <label className="grid gap-2 text-sm font-medium text-[color:var(--ink)]">
-          <span>Date Range End</span>
+          End Date
           <input
             type="date"
-            name="endDate"
-            defaultValue={filters.endDate}
-            className="min-h-11 rounded-2xl border border-[color:var(--border)] bg-white px-4 text-[color:var(--ink)] outline-none ring-0 focus:border-[color:var(--accent)]"
+            value={formValues.endDate}
+            onChange={(event) =>
+              setFormValues((current) => ({ ...current, endDate: event.target.value }))
+            }
+            className="min-h-11 rounded-2xl border border-[color:var(--border)] bg-white px-4 text-sm text-[color:var(--ink)] outline-none transition focus:border-[color:var(--accent)] focus:ring-2 focus:ring-[color:var(--accent-soft)]/40"
           />
         </label>
 
         <label className="grid gap-2 text-sm font-medium text-[color:var(--ink)]">
-          <span>Vendor</span>
+          Vendor
           <select
-            name="vendor"
-            defaultValue={filters.vendor}
-            className="min-h-11 rounded-2xl border border-[color:var(--border)] bg-white px-4 text-[color:var(--ink)] outline-none focus:border-[color:var(--accent)]"
+            value={formValues.vendor}
+            onChange={(event) =>
+              setFormValues((current) => ({ ...current, vendor: event.target.value }))
+            }
+            className="min-h-11 rounded-2xl border border-[color:var(--border)] bg-white px-4 text-sm text-[color:var(--ink)] outline-none transition focus:border-[color:var(--accent)] focus:ring-2 focus:ring-[color:var(--accent-soft)]/40"
           >
             <option value="">All vendors</option>
             {options.vendors.map((vendor) => (
@@ -98,11 +157,13 @@ export function FilterBar({ filters, options }: FilterBarProps) {
         </label>
 
         <label className="grid gap-2 text-sm font-medium text-[color:var(--ink)]">
-          <span>Material</span>
+          Material
           <select
-            name="material"
-            defaultValue={filters.material}
-            className="min-h-11 rounded-2xl border border-[color:var(--border)] bg-white px-4 text-[color:var(--ink)] outline-none focus:border-[color:var(--accent)]"
+            value={formValues.material}
+            onChange={(event) =>
+              setFormValues((current) => ({ ...current, material: event.target.value }))
+            }
+            className="min-h-11 rounded-2xl border border-[color:var(--border)] bg-white px-4 text-sm text-[color:var(--ink)] outline-none transition focus:border-[color:var(--accent)] focus:ring-2 focus:ring-[color:var(--accent-soft)]/40"
           >
             <option value="">All materials</option>
             {options.materials.map((material) => (
@@ -113,30 +174,31 @@ export function FilterBar({ filters, options }: FilterBarProps) {
           </select>
         </label>
 
-        {showEmployeeFilter ? (
-          <label className="grid gap-2 text-sm font-medium text-[color:var(--ink)]">
-            <span>Employee</span>
-            <select
-              name="employee"
-              defaultValue={filters.employee}
-              className="min-h-11 rounded-2xl border border-[color:var(--border)] bg-white px-4 text-[color:var(--ink)] outline-none focus:border-[color:var(--accent)]"
-            >
-              <option value="">All employees</option>
-              {options.employees.map((employee) => (
-                <option key={employee} value={employee}>
-                  {employee}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
+        <label className="grid gap-2 text-sm font-medium text-[color:var(--ink)]">
+          Employee
+          <select
+            value={formValues.employee}
+            onChange={(event) =>
+              setFormValues((current) => ({ ...current, employee: event.target.value }))
+            }
+            className="min-h-11 rounded-2xl border border-[color:var(--border)] bg-white px-4 text-sm text-[color:var(--ink)] outline-none transition focus:border-[color:var(--accent)] focus:ring-2 focus:ring-[color:var(--accent-soft)]/40"
+          >
+            <option value="">All employees</option>
+            {options.employees.map((employee) => (
+              <option key={employee} value={employee}>
+                {employee}
+              </option>
+            ))}
+          </select>
+        </label>
 
-        <div className="grid gap-2 self-end">
+        <div className="md:col-span-2 xl:col-span-5">
           <button
             type="submit"
-            className="inline-flex min-h-11 items-center justify-center rounded-full bg-[color:var(--signal)] px-5 text-sm font-semibold text-white transition hover:bg-[color:var(--signal-strong)]"
+            disabled={isPending}
+            className="inline-flex min-h-11 items-center justify-center rounded-full bg-[color:var(--signal)] px-5 text-sm font-semibold text-white transition hover:bg-[color:var(--signal-strong)] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Apply Filters
+            {isPending ? "Applying..." : "Apply Filters"}
           </button>
         </div>
       </form>

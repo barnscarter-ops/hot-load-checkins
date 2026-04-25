@@ -17,7 +17,9 @@ Mobile-first internal app for replacing a manual truck paperwork workflow with:
 |   |-- api
 |   |   |-- check-ins
 |   |   |   |-- [id]
-|   |   |   |   `-- route.ts
+|   |   |   |   |-- route.ts
+|   |   |   |   `-- workbook
+|   |   |   |       `-- route.ts
 |   |   |   |-- extract
 |   |   |   |   `-- route.ts
 |   |   |   |-- master-export
@@ -35,6 +37,9 @@ Mobile-first internal app for replacing a manual truck paperwork workflow with:
 |       `-- page.tsx
 |-- components
 |   |-- check-in
+|   |   |-- check-in-actions.tsx
+|   |   |-- check-in-preview-card.tsx
+|   |   |-- check-in-preview-modal.tsx
 |   |   |-- field-row.tsx
 |   |   |-- hot-load-check-in-app.tsx
 |   |   |-- image-picker.tsx
@@ -43,6 +48,8 @@ Mobile-first internal app for replacing a manual truck paperwork workflow with:
 |   `-- dashboard
 |       |-- avg-by-material-chart.tsx
 |       |-- avg-by-vendor-chart.tsx
+|       |-- dashboard-view.tsx
+|       |-- date-check-in-list.tsx
 |       |-- distribution-chart.tsx
 |       |-- filter-bar.tsx
 |       |-- kpi-card.tsx
@@ -54,6 +61,7 @@ Mobile-first internal app for replacing a manual truck paperwork workflow with:
 |   |   `-- extract-check-in.ts
 |   |-- check-ins
 |   |   |-- constants.ts
+|   |   |-- formatters.ts
 |   |   |-- repository.ts
 |   |   |-- schema.ts
 |   |   |-- storage.ts
@@ -126,6 +134,10 @@ Apply the schema in Supabase SQL Editor, then set the matching environment varia
   Individual field rendering with missing, low-confidence, and manual-edit styling.
 - [components/check-in/summary-card.tsx](/C:/Users/carte/CodeProjects/Gerdau/components/check-in/summary-card.tsx)
   Workflow, status, and completion summaries.
+- [components/check-in/check-in-preview-modal.tsx](/C:/Users/carte/CodeProjects/Gerdau/components/check-in/check-in-preview-modal.tsx)
+  Reusable submitted check-in preview with download and share actions.
+- [components/dashboard/dashboard-view.tsx](/C:/Users/carte/CodeProjects/Gerdau/components/dashboard/dashboard-view.tsx)
+  Client dashboard shell for preview selection, date lookup, and refresh behavior.
 
 ## 5. AI Extraction Service
 
@@ -240,7 +252,8 @@ npx tsx scripts/generate-excel-samples.ts
 4. Missing fields show in red, low-confidence fields show in amber, and manual edits show in teal.
 5. `POST /api/check-ins/submit` validates every required field, saves the approved values to Postgres, marks the row submitted, and then runs export and email steps.
 6. The per-truck Excel file is stored in Supabase Storage, and the email is sent with the workbook plus images attached.
-7. The master export remains DB-driven and is generated fresh from submitted Postgres records on demand.
+7. After submit succeeds, the app opens a `Hot Load Check-In Summary` preview so the operator can review, download, or share the individual sheet immediately.
+8. The master export remains DB-driven and is generated fresh from submitted Postgres records on demand.
 
 ## Data Normalization Standard
 
@@ -276,19 +289,30 @@ One shared helper layer now standardizes quantity, date, time, timezone, and dur
 6. Re-enter the field, confirm the sticky action changes back to a submit-ready state, and submit successfully.
 7. Confirm the row shows `status = submitted`, `review_status = reviewed`, `submission_status = succeeded`, `export_status = succeeded`, and `email_status = succeeded`.
 8. Download the master export and confirm it builds from submitted Postgres rows.
-9. Visit `/recovery` and confirm the recent check-in shows the latest statuses, `error_message`, and `submitted_at`.
-10. Use `Download Sheet` from the dashboard tables or `Download Check-In Sheet` from `/recovery` to open the individual workbook for a submitted record.
-10. If you want to exercise failure recovery, temporarily break email or export configuration, submit once, and confirm the approved row stays saved while the failed step is marked clearly for retry.
+9. Submit a check-in and confirm the `Hot Load Check-In Summary` preview opens with `Dismiss`, `Download Excel`, and `Share`.
+10. Visit `/dashboard`, use `Refresh`, pick a lookup date, select a record from the date list, and confirm the same preview opens.
+11. Visit `/recovery` and confirm the recent check-in shows the latest statuses, `error_message`, and `submitted_at`.
+12. Use `Download Sheet` from the dashboard tables or `Download Check-In Sheet` from `/recovery` to open the individual workbook for a submitted record.
+13. If you want to exercise failure recovery, temporarily break email or export configuration, submit once, and confirm the approved row stays saved while the failed step is marked clearly for retry.
 
 ## Individual Workbook Downloads
 
 Users can download the per-check-in Excel workbook from:
 
+- the post-submit `Hot Load Check-In Summary` preview on the home page
+- `/dashboard` via the selected-date lookup list after opening a record preview
 - `/dashboard` via the `Download Sheet` action in `Top Slow Loads`
 - `/dashboard` via the `Download Sheet` action in `Problem Loads`
 - `/recovery` via the `Download Check-In Sheet` action on submitted records
 
 The download route is `GET /api/check-ins/[id]/workbook`. It serves the stored workbook when available and regenerates the workbook from the submitted Postgres record when the stored file is missing.
+
+## Individual Preview And Share
+
+- After a successful submit, the app opens a `Hot Load Check-In Summary` modal that visually mirrors the single-truck Excel form using normalized submitted data.
+- The preview includes `Download Excel` and `Share`.
+- `Share` uses the Web Share API when available. If the browser cannot share directly, the app copies the workbook download link to the clipboard and shows `Download link copied`.
+- From the dashboard, open `http://localhost:3001/dashboard`, choose a lookup date, and tap a result row to open the same preview modal.
 
 ## Upload / Extract Troubleshooting
 

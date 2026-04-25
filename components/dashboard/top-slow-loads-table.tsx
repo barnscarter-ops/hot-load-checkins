@@ -1,11 +1,14 @@
+"use client";
+
 import { formatDurationMinutes, formatSubmittedAt } from "@/lib/dashboard/metrics";
 import type { DashboardLoadRecord } from "@/lib/dashboard/types";
 
 interface TopSlowLoadsTableProps {
   rows: DashboardLoadRecord[];
+  onPreview?: (checkInId: string) => void;
 }
 
-export function TopSlowLoadsTable({ rows }: TopSlowLoadsTableProps) {
+export function TopSlowLoadsTable({ rows, onPreview }: TopSlowLoadsTableProps) {
   return (
     <section className="rounded-[1.8rem] border border-[color:var(--border)] bg-[color:var(--panel)] p-5 shadow-[0_18px_48px_rgba(12,28,45,0.12)]">
       <div className="flex items-center justify-between gap-3">
@@ -27,14 +30,14 @@ export function TopSlowLoadsTable({ rows }: TopSlowLoadsTableProps) {
                 <th className="border-b border-[color:var(--border)] px-3 py-3">Material</th>
                 <th className="border-b border-[color:var(--border)] px-3 py-3">Time On Site</th>
                 <th className="border-b border-[color:var(--border)] px-3 py-3">Submitted At</th>
-                <th className="border-b border-[color:var(--border)] px-3 py-3">Sheet</th>
+                <th className="border-b border-[color:var(--border)] px-3 py-3">Actions</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((row) => (
                 <tr key={row.id} className="text-[color:var(--ink)]">
                   <td className="border-b border-[color:var(--border)] px-3 py-3 font-medium">
-                    {row.ticketNumber || "—"}
+                    {row.ticketNumber || "-"}
                   </td>
                   <td className="border-b border-[color:var(--border)] px-3 py-3">
                     {row.vendorDisplay}
@@ -49,12 +52,23 @@ export function TopSlowLoadsTable({ rows }: TopSlowLoadsTableProps) {
                     {formatSubmittedAt(row.submittedAt)}
                   </td>
                   <td className="border-b border-[color:var(--border)] px-3 py-3">
-                    <a
-                      href={`/api/check-ins/${row.id}/workbook`}
-                      className="inline-flex min-h-10 items-center justify-center rounded-full border border-[color:var(--border)] bg-white px-3 text-xs font-semibold text-[color:var(--ink)] transition hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
-                    >
-                      Download Sheet
-                    </a>
+                    <div className="flex flex-wrap gap-2">
+                      {onPreview ? (
+                        <button
+                          type="button"
+                          onClick={() => onPreview(row.id)}
+                          className="inline-flex min-h-10 items-center justify-center rounded-full border border-[color:var(--accent-soft)] bg-[color:var(--panel-soft)] px-3 text-xs font-semibold text-[color:var(--accent)] transition hover:border-[color:var(--accent)]"
+                        >
+                          Preview
+                        </button>
+                      ) : null}
+                      <a
+                        href={`/api/check-ins/${row.id}/workbook`}
+                        className="inline-flex min-h-10 items-center justify-center rounded-full border border-[color:var(--border)] bg-white px-3 text-xs font-semibold text-[color:var(--ink)] transition hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
+                      >
+                        Download Sheet
+                      </a>
+                    </div>
                   </td>
                 </tr>
               ))}

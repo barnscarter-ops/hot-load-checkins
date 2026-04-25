@@ -28,6 +28,7 @@ import type {
 import { errorMessage } from "@/lib/utils";
 
 import { ImagePicker } from "@/components/check-in/image-picker";
+import { CheckInPreviewModal } from "@/components/check-in/check-in-preview-modal";
 import { ReviewForm } from "@/components/check-in/review-form";
 import { SummaryCard } from "@/components/check-in/summary-card";
 
@@ -154,6 +155,7 @@ export function HotLoadCheckInApp() {
   const [submitting, setSubmitting] = useState(false);
   const [draft, setDraft] = useState<ExtractResponsePayload | null>(null);
   const [submitResult, setSubmitResult] = useState<SubmitResponsePayload | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [fields, setFields] = useState<CheckInFields>(BLANK_CHECK_IN_FIELDS);
   const [reviewBaselineFields, setReviewBaselineFields] =
     useState<CheckInFields>(BLANK_CHECK_IN_FIELDS);
@@ -326,6 +328,7 @@ export function HotLoadCheckInApp() {
       setSubmitFailureStage(null);
       setSubmitError(null);
       setSubmitResult(successPayload);
+      setPreviewOpen(true);
     } catch (error) {
       setSubmitError({
         title: "Submit request failed",
@@ -402,6 +405,7 @@ export function HotLoadCheckInApp() {
     setMasterExportError(null);
     setSubmitFieldErrors({});
     setSubmitResult(null);
+    setPreviewOpen(false);
   }
 
   const rightPanel = submitResult ? (
@@ -416,6 +420,26 @@ export function HotLoadCheckInApp() {
           { label: "Email", value: submitResult.checkIn.emailStatus },
         ]}
       />
+
+      <section className="rounded-[2rem] border border-[color:var(--border)] bg-[color:var(--panel)] p-5 shadow-[0_22px_60px_rgba(12,28,45,0.14)] sm:p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[color:var(--accent)]">
+          Individual Check-In
+        </p>
+        <h3 className="mt-2 text-xl font-semibold text-[color:var(--ink)]">
+          Preview, download, or share the submitted sheet
+        </h3>
+        <p className="mt-2 text-sm leading-6 text-[color:var(--muted)]">
+          Open the same form-style summary used for the individual truck workbook without leaving the app.
+        </p>
+
+        <button
+          type="button"
+          onClick={() => setPreviewOpen(true)}
+          className="mt-5 inline-flex w-full items-center justify-center rounded-full border border-[color:var(--accent-soft)] bg-[color:var(--panel-soft)] px-5 py-3 text-sm font-semibold text-[color:var(--accent)] transition hover:border-[color:var(--accent)]"
+        >
+          Preview Submitted Check-In
+        </button>
+      </section>
 
       <section className="rounded-[2rem] border border-[color:var(--border)] bg-[color:var(--panel)] p-5 shadow-[0_22px_60px_rgba(12,28,45,0.14)] sm:p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[color:var(--accent)]">
@@ -541,6 +565,12 @@ export function HotLoadCheckInApp() {
           </ul>
         </section>
       </div>
+
+      <CheckInPreviewModal
+        open={previewOpen}
+        checkIn={submitResult?.checkIn ?? null}
+        onDismiss={() => setPreviewOpen(false)}
+      />
     </div>
   );
 }

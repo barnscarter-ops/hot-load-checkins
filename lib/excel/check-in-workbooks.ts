@@ -6,7 +6,11 @@ import {
   FIELD_LABELS,
   MASTER_EXPORT_ROUTE,
 } from "@/lib/check-ins/constants";
-import { normalizeQuantityInput } from "@/lib/check-ins/schema";
+import {
+  formatQuantityForDisplay,
+  getDelayFlag,
+  getManualEditsDisplay,
+} from "@/lib/check-ins/formatters";
 import {
   computeDurationMinutes,
   durationMinutesToExcelFraction,
@@ -125,27 +129,6 @@ function applySectionOutline(
       };
     }
   }
-}
-
-function formatQuantityDisplay(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return "";
-  }
-
-  const normalized = normalizeQuantityInput(trimmed);
-  if (!/^-?\d+(\.\d+)?$/.test(normalized)) {
-    return trimmed;
-  }
-
-  const numericValue = Number(normalized);
-  const hasDecimal = normalized.includes(".");
-  const formattedValue = new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: hasDecimal ? 2 : 0,
-    maximumFractionDigits: hasDecimal ? 2 : 0,
-  }).format(numericValue);
-
-  return `${formattedValue} LB`;
 }
 
 function computeTimeOnSiteFraction(fields: CheckInFields) {
@@ -267,16 +250,10 @@ function populateSingleTruckWorksheet(
 
   const submittedAtValue = toExcelDallasDateTime(input.submittedAt);
   const exportGeneratedAtValue = toExcelDallasDateTime(input.exportGeneratedAt);
-  const loadWeightDisplay = formatQuantityDisplay(input.fields.quantity);
+  const loadWeightDisplay = formatQuantityForDisplay(input.fields.quantity);
   const timeOnSiteValue = computeTimeOnSiteFraction(input.fields);
-  const delayFlagValue =
-    timeOnSiteValue === null ? "" : timeOnSiteValue > 2 / 24 ? "Yes" : "No";
-  const manualEditsValue =
-    input.manuallyEditedFields.length > 0
-      ? `Edited: ${input.manuallyEditedFields
-          .map((fieldKey) => FORM_FIELD_LABELS[fieldKey])
-          .join(", ")}`
-      : "No manual edits";
+  const delayFlagValue = getDelayFlag(input.fields) === "Unknown" ? "" : getDelayFlag(input.fields);
+  const manualEditsValue = getManualEditsDisplay(input.manuallyEditedFields);
 
   addSectionHeader(worksheet, 3, "LOAD DETAILS");
   styleFormCellPair(worksheet, 4, FORM_FIELD_LABELS.ticketNumber);

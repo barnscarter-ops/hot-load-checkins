@@ -4,6 +4,7 @@ import type { DashboardFilterOptions, DashboardFilters, DashboardQueryRow } from
 
 interface StoredDashboardRow {
   id: string;
+  date: string | null;
   ticket_number: string | null;
   vendor: string | null;
   material: string | null;
@@ -20,6 +21,7 @@ interface StoredDashboardRow {
 function mapDashboardRow(row: StoredDashboardRow): DashboardQueryRow {
   return {
     id: row.id,
+    date: row.date ?? "",
     ticketNumber: row.ticket_number ?? "",
     vendor: row.vendor ?? "",
     material: row.material ?? "",
@@ -79,6 +81,7 @@ export async function getDashboardRows(filters: DashboardFilters): Promise<Dashb
     .select(
       [
         "id",
+        "date",
         "ticket_number",
         "vendor",
         "material",

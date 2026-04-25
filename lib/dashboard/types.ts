@@ -15,6 +15,7 @@ export interface DashboardFilters {
 
 export interface DashboardQueryRow {
   id: string;
+  date: string;
   ticketNumber: string;
   vendor: string;
   material: string;
