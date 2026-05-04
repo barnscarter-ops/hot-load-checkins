@@ -24,6 +24,7 @@ import { getServerEnv } from "@/lib/env";
 import { errorMessage, sanitizeFileName } from "@/lib/utils";
 
 export const runtime = "nodejs";
+export const maxDuration = 120;
 
 const EXTRACT_ROUTE = "POST /api/check-ins/extract";
 

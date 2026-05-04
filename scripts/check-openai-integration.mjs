@@ -17,7 +17,7 @@ try {
   const response = await client.responses.create({
     model: process.env.OPENAI_MODEL,
     input: "Reply with exactly OK.",
-    max_output_tokens: 10,
+    max_output_tokens: 16,
   });
 
   const outputText = response.output_text?.trim();

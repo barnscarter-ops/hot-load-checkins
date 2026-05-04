@@ -44,6 +44,84 @@ interface SubmitErrorState {
   details?: string;
 }
 
+const EXTRACTION_IMAGE_MAX_EDGE = 1800;
+const EXTRACTION_IMAGE_QUALITY = 0.82;
+
+async function readJsonResponse<T>(response: Response): Promise<T | { error?: string }> {
+  const contentType = response.headers.get("content-type") ?? "";
+
+  if (contentType.includes("application/json")) {
+    return (await response.json()) as T;
+  }
+
+  const text = await response.text();
+  return {
+    error:
+      text.trim() ||
+      `${response.status} ${response.statusText || "Unexpected server response"}`.trim(),
+  };
+}
+
+function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  type: string,
+  quality: number,
+): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (blob) {
+          resolve(blob);
+          return;
+        }
+
+        reject(new Error("Could not prepare the image for upload."));
+      },
+      type,
+      quality,
+    );
+  });
+}
+
+async function prepareImageForExtraction(file: File) {
+  if (!file.type.startsWith("image/") || file.type === "image/svg+xml") {
+    return file;
+  }
+
+  let bitmap: ImageBitmap;
+
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    return file;
+  }
+
+  const scale = Math.min(
+    1,
+    EXTRACTION_IMAGE_MAX_EDGE / Math.max(bitmap.width, bitmap.height),
+  );
+  const width = Math.max(1, Math.round(bitmap.width * scale));
+  const height = Math.max(1, Math.round(bitmap.height * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  canvas.getContext("2d")?.drawImage(bitmap, 0, 0, width, height);
+  bitmap.close();
+
+  const blob = await canvasToBlob(canvas, "image/jpeg", EXTRACTION_IMAGE_QUALITY);
+
+  if (blob.size >= file.size) {
+    return file;
+  }
+
+  const fileName = file.name.replace(/\.[^.]+$/, "") || "capture";
+  return new File([blob], `${fileName}.jpg`, {
+    type: "image/jpeg",
+    lastModified: file.lastModified,
+  });
+}
+
 function getExtractSuccessMessage(payload: ExtractResponsePayload | null) {
   if (!payload) {
     return null;
@@ -213,17 +291,19 @@ export function HotLoadCheckInApp() {
     try {
       const formData = new FormData();
       formData.append("extractRequestId", extractRequestId);
-      files.forEach((file) => formData.append("images", file));
+      const uploadFiles = await Promise.all(files.map(prepareImageForExtraction));
+      uploadFiles.forEach((file) => formData.append("images", file));
 
       const response = await fetch("/api/check-ins/extract", {
         method: "POST",
         body: formData,
       });
 
-      const payload = (await response.json()) as
+      const payload = await readJsonResponse<
         | ExtractResponsePayload
         | WorkflowFailureResponse
-        | { error?: string };
+        | { error?: string }
+      >(response);
 
       if (!response.ok) {
         const failureStage = "stage" in payload ? payload.stage : null;
@@ -234,7 +314,7 @@ export function HotLoadCheckInApp() {
           message:
             "error" in payload && payload.error
               ? payload.error
-              : "Extraction failed. Please try again.",
+              : `Extraction failed with status ${response.status}. Please try again.`,
           details: failureDetails,
         });
         return;
@@ -291,11 +371,12 @@ export function HotLoadCheckInApp() {
         }),
       });
 
-      const payload = (await response.json()) as
+      const payload = await readJsonResponse<
         | SubmitResponsePayload
         | (SubmitValidationErrorResponse & { fieldErrors: CheckInFieldErrors })
         | WorkflowFailureResponse
-        | { error?: string };
+        | { error?: string }
+      >(response);
 
       if (!response.ok) {
         const fieldErrorsFromApi =
@@ -347,7 +428,9 @@ export function HotLoadCheckInApp() {
     try {
       const response = await fetch(MASTER_EXPORT_ROUTE);
       if (!response.ok) {
-        const payload = (await response.json()) as WorkflowFailureResponse | { error?: string };
+        const payload = await readJsonResponse<WorkflowFailureResponse | { error?: string }>(
+          response,
+        );
         throw new Error(
           "error" in payload && payload.error
             ? payload.error
