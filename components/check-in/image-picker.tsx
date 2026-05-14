@@ -12,9 +12,10 @@ interface ImagePickerProps {
     title: string;
     message: string;
     details?: string;
+    nextSteps?: string;
   } | null;
   actionLabel?: string;
-  onFilesSelected: (files: File[]) => void;
+  onFilesSelected: (files: File[]) => Promise<void> | void;
   onExtract: () => void;
 }
 
@@ -28,9 +29,9 @@ export function ImagePicker({
   onFilesSelected,
   onExtract,
 }: ImagePickerProps) {
-  function handleFileSelection(fileList: FileList | null, resetInput: () => void) {
+  async function handleFileSelection(fileList: FileList | null, resetInput: () => void) {
     const nextFiles = Array.from(fileList ?? []);
-    onFilesSelected(nextFiles.slice(0, MAX_IMAGE_COUNT));
+    await onFilesSelected(nextFiles.slice(0, MAX_IMAGE_COUNT));
     resetInput();
   }
 
@@ -67,7 +68,7 @@ export function ImagePicker({
           multiple
           disabled={disabled}
           onChange={(event) => {
-            handleFileSelection(event.target.files, () => {
+            void handleFileSelection(event.target.files, () => {
               event.currentTarget.value = "";
             });
           }}
@@ -139,6 +140,11 @@ export function ImagePicker({
           {error.details ? (
             <p className="mt-2 whitespace-pre-line text-xs leading-5 text-[color:var(--danger)]/85">
               Details: {error.details}
+            </p>
+          ) : null}
+          {error.nextSteps ? (
+            <p className="mt-2 whitespace-pre-line text-xs leading-5 text-[color:var(--danger)]/85">
+              Next steps: {error.nextSteps}
             </p>
           ) : null}
         </div>

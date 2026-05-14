@@ -36,6 +36,7 @@ interface ExtractErrorState {
   title: string;
   message: string;
   details?: string;
+  nextSteps?: string;
 }
 
 interface SubmitErrorState {
@@ -108,6 +109,32 @@ function getExtractFailureTitle(
       return "Saving extracted data failed";
     default:
       return "Upload and extraction failed";
+  }
+}
+
+function getExtractFailureNextSteps(
+  stage: WorkflowFailureStage | null,
+  details?: string,
+) {
+  if (details?.includes("Database schema is out of date")) {
+    return "Run the latest Supabase schema migration, then retry extraction.";
+  }
+
+  switch (stage) {
+    case "configuration":
+      return "Admin check: confirm Supabase URL/key, service role key, storage bucket name, and OpenAI key/model in server env.";
+    case "request_validation":
+      return "Retake/reselect at least one image and retry. If it keeps happening, force-close and reopen the browser tab.";
+    case "draft_insert":
+      return "Admin check: verify Supabase connectivity and service-role permissions for draft inserts.";
+    case "image_upload":
+      return "Operator check: confirm network signal, then retry. Admin check: verify bucket write permissions and storage logs.";
+    case "extraction":
+      return "Admin check: verify OpenAI key/model/rate limits. Operator can retry with the same photos.";
+    case "final_update":
+      return "Admin check: verify database update permissions for extraction result fields.";
+    default:
+      return "Retry once. If it still fails, copy the Details text and send it to support to identify the exact failing step.";
   }
 }
 
@@ -188,6 +215,62 @@ export function HotLoadCheckInApp() {
     [draft, fields, reviewBaselineFields],
   );
 
+  async function normalizeImageForUpload(file: File): Promise<File> {
+    const MAX_BYTES = 4 * 1024 * 1024;
+    const MAX_DIMENSION = 2200;
+
+    if (!file.type.startsWith("image/") || file.size <= MAX_BYTES) {
+      return file;
+    }
+
+    try {
+      const sourceUrl = URL.createObjectURL(file);
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error("Image decode failed"));
+        image.src = sourceUrl;
+      });
+
+      const ratio = Math.min(1, MAX_DIMENSION / Math.max(img.width, img.height));
+      const width = Math.max(1, Math.round(img.width * ratio));
+      const height = Math.max(1, Math.round(img.height * ratio));
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext("2d");
+      if (!context) {
+        URL.revokeObjectURL(sourceUrl);
+        return file;
+      }
+
+      context.drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(sourceUrl);
+
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob(resolve, "image/jpeg", 0.86);
+      });
+
+      if (!blob || blob.size >= file.size) {
+        return file;
+      }
+
+      const baseName = file.name.replace(/\.[^.]+$/, "");
+      return new File([blob], `${baseName || "capture"}.jpg`, {
+        type: "image/jpeg",
+        lastModified: file.lastModified,
+      });
+    } catch {
+      return file;
+    }
+  }
+
+  async function handleFilesSelected(nextFiles: File[]) {
+    const optimized = await Promise.all(nextFiles.map(normalizeImageForUpload));
+    setFiles(optimized);
+  }
+
   function syncDraftCheckIn(checkIn: CheckInRecord) {
     setDraft(buildDraftPayload(checkIn));
   }
@@ -236,6 +319,7 @@ export function HotLoadCheckInApp() {
               ? payload.error
               : "Extraction failed. Please try again.",
           details: failureDetails,
+          nextSteps: getExtractFailureNextSteps(failureStage, failureDetails),
         });
         return;
       }
@@ -252,6 +336,8 @@ export function HotLoadCheckInApp() {
         title: "Upload request failed",
         message: "The browser could not reach the extract API.",
         details: errorMessage(error),
+        nextSteps:
+          "Check cell/Wi-Fi signal, retry once, and if it fails again capture the Details text and screenshot for support.",
       });
     } finally {
       setExtracting(false);
@@ -518,7 +604,7 @@ export function HotLoadCheckInApp() {
           isExtracting={extracting}
           error={extractError}
           actionLabel={getExtractActionLabel(extractFailureStage, files.length > 0)}
-          onFilesSelected={setFiles}
+          onFilesSelected={handleFilesSelected}
           onExtract={handleExtract}
         />
 
