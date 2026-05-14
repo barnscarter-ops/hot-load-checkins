@@ -303,14 +303,37 @@ export function HotLoadCheckInApp() {
         body: formData,
       });
 
-      const payload = (await response.json()) as
-        | ExtractResponsePayload
-        | WorkflowFailureResponse
-        | { error?: string };
+      const responseText = await response.text();
+      const payload = (() => {
+        if (!responseText) {
+          return {} as { error?: string };
+        }
+
+        try {
+          return JSON.parse(responseText) as
+            | ExtractResponsePayload
+            | WorkflowFailureResponse
+            | { error?: string };
+        } catch {
+          return { error: responseText };
+        }
+      })();
 
       if (!response.ok) {
-        const failureStage = "stage" in payload ? payload.stage : null;
-        const failureDetails = "details" in payload ? payload.details : undefined;
+        const failureStage =
+          typeof payload === "object" &&
+          payload !== null &&
+          "stage" in payload &&
+          typeof payload.stage === "string"
+            ? (payload.stage as WorkflowFailureStage)
+            : null;
+        const failureDetails =
+          typeof payload === "object" &&
+          payload !== null &&
+          "details" in payload &&
+          typeof payload.details === "string"
+            ? payload.details
+            : undefined;
         setExtractFailureStage(failureStage);
         setExtractError({
           title: getExtractFailureTitle(failureStage, failureDetails),
