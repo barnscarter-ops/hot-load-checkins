@@ -6,7 +6,11 @@ import {
   APP_NAME,
   BLANK_CHECK_IN_FIELDS,
   CHECK_IN_FIELD_ORDER,
+  IMAGE_JPEG_QUALITY,
   MASTER_EXPORT_ROUTE,
+  MAX_IMAGE_COUNT,
+  MAX_IMAGE_DIMENSION_PX,
+  MAX_UPLOAD_TOTAL_BYTES,
 } from "@/lib/check-ins/constants";
 import {
   getCheckInFieldErrors,
@@ -43,6 +47,43 @@ interface SubmitErrorState {
   title: string;
   message: string;
   details?: string;
+}
+
+function summarizeResponseBody(body: string) {
+  const compact = body.replace(/\s+/g, " ").trim();
+  if (!compact) {
+    return "(empty response body)";
+  }
+
+  return compact.length > 200 ? `${compact.slice(0, 200)}...` : compact;
+}
+
+async function parseJsonOrFallback(response: Response) {
+  const rawBody = await response.text();
+
+  if (!rawBody) {
+    return { payload: {}, parseError: null };
+  }
+
+  try {
+    return { payload: JSON.parse(rawBody) as unknown, parseError: null };
+  } catch (error) {
+    return {
+      payload: {
+        error: `Server returned a non-JSON response (HTTP ${response.status}).`,
+        details: summarizeResponseBody(rawBody),
+      },
+      parseError: error,
+    };
+  }
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024 * 1024) {
+    return `${Math.round(bytes / 1024)} KB`;
+  }
+
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function getExtractSuccessMessage(payload: ExtractResponsePayload | null) {
@@ -216,10 +257,7 @@ export function HotLoadCheckInApp() {
   );
 
   async function normalizeImageForUpload(file: File): Promise<File> {
-    const MAX_BYTES = 4 * 1024 * 1024;
-    const MAX_DIMENSION = 2200;
-
-    if (!file.type.startsWith("image/") || file.size <= MAX_BYTES) {
+    if (!file.type.startsWith("image/")) {
       return file;
     }
 
@@ -232,7 +270,7 @@ export function HotLoadCheckInApp() {
         image.src = sourceUrl;
       });
 
-      const ratio = Math.min(1, MAX_DIMENSION / Math.max(img.width, img.height));
+      const ratio = Math.min(1, MAX_IMAGE_DIMENSION_PX / Math.max(img.width, img.height));
       const width = Math.max(1, Math.round(img.width * ratio));
       const height = Math.max(1, Math.round(img.height * ratio));
 
@@ -249,10 +287,10 @@ export function HotLoadCheckInApp() {
       URL.revokeObjectURL(sourceUrl);
 
       const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob(resolve, "image/jpeg", 0.86);
+        canvas.toBlob(resolve, "image/jpeg", IMAGE_JPEG_QUALITY);
       });
 
-      if (!blob || blob.size >= file.size) {
+      if (!blob) {
         return file;
       }
 
@@ -267,7 +305,32 @@ export function HotLoadCheckInApp() {
   }
 
   async function handleFilesSelected(nextFiles: File[]) {
+    if (nextFiles.length > MAX_IMAGE_COUNT) {
+      setExtractFailureStage("request_validation");
+      setExtractError({
+        title: "Too many images selected",
+        message: `Select ${MAX_IMAGE_COUNT} images or fewer.`,
+        details: `Received ${nextFiles.length} images.`,
+      });
+      return;
+    }
+
     const optimized = await Promise.all(nextFiles.map(normalizeImageForUpload));
+    const totalBytes = optimized.reduce((sum, file) => sum + file.size, 0);
+    if (totalBytes > MAX_UPLOAD_TOTAL_BYTES) {
+      setFiles([]);
+      setExtractFailureStage("request_validation");
+      setExtractError({
+        title: "Upload too large",
+        message: `Selected images total ${formatBytes(totalBytes)}. Limit is ${formatBytes(MAX_UPLOAD_TOTAL_BYTES)}.`,
+        nextSteps:
+          "Retake with lower resolution, select fewer photos, or crop to paperwork only, then try again.",
+      });
+      return;
+    }
+
+    setExtractError(null);
+    setExtractFailureStage(null);
     setFiles(optimized);
   }
 
@@ -303,7 +366,8 @@ export function HotLoadCheckInApp() {
         body: formData,
       });
 
-      const payload = (await response.json()) as
+      const { payload: extractedPayload } = await parseJsonOrFallback(response);
+      const payload = extractedPayload as
         | ExtractResponsePayload
         | WorkflowFailureResponse
         | { error?: string };
@@ -377,7 +441,8 @@ export function HotLoadCheckInApp() {
         }),
       });
 
-      const payload = (await response.json()) as
+      const { payload: submitPayload } = await parseJsonOrFallback(response);
+      const payload = submitPayload as
         | SubmitResponsePayload
         | (SubmitValidationErrorResponse & { fieldErrors: CheckInFieldErrors })
         | WorkflowFailureResponse

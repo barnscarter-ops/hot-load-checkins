@@ -9,6 +9,9 @@ import type {
 export const APP_NAME = "Hot Load Check-In";
 export const LOW_CONFIDENCE_THRESHOLD = 0.8;
 export const MAX_IMAGE_COUNT = 10;
+export const MAX_UPLOAD_TOTAL_BYTES = 12 * 1024 * 1024;
+export const MAX_IMAGE_DIMENSION_PX = 1600;
+export const IMAGE_JPEG_QUALITY = 0.78;
 export const CHECK_IN_SHEET_NAME = "Check-In";
 export const MASTER_EXPORT_ROUTE = "/api/check-ins/master-export";
 export const XLSX_MIME_TYPE =
