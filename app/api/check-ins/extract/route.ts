@@ -19,7 +19,7 @@ import {
   getMissingRequiredFields,
 } from "@/lib/check-ins/schema";
 import type { WorkflowFailureStage } from "@/lib/check-ins/types";
-import { uploadBucketFile } from "@/lib/check-ins/storage";
+import { createSignedBucketUrl, uploadBucketFile } from "@/lib/check-ins/storage";
 import { getServerEnv } from "@/lib/env";
 import { errorMessage, sanitizeFileName } from "@/lib/utils";
 
@@ -409,6 +409,10 @@ export async function POST(request: Request) {
 
     const extraction = await (async () => {
       try {
+        const signedImageUrls = await Promise.all(
+          preparedFiles.map((file) => createSignedBucketUrl(file.storagePath)),
+        );
+
         logExtractEvent("openai_call_start", {
           draftId: draft.id,
           extractRequestId,
@@ -417,10 +421,7 @@ export async function POST(request: Request) {
         });
 
         const result = await extractCheckInFromImages(
-          preparedFiles.map((file) => ({
-            buffer: file.buffer,
-            mimeType: file.mimeType,
-          })),
+          signedImageUrls.map((url) => ({ url })),
         );
 
         logExtractEvent("openai_call_success", {
