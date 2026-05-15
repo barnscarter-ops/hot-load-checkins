@@ -192,4 +192,40 @@ describe("POST /api/check-ins/extract", () => {
       details: "OpenAI timeout",
     });
   });
+
+  it("rejects oversized total upload payload before draft creation", async () => {
+    mockGetServerEnv.mockReturnValue({
+      CHECKIN_STORAGE_BUCKET: "hot-load-check-ins",
+      OPENAI_MODEL: "gpt-5.4",
+    });
+
+    const formData = new FormData();
+    formData.append("extractRequestId", "extract-too-big");
+    formData.append(
+      "images",
+      new File([new Uint8Array(7 * 1024 * 1024)], "one.jpg", { type: "image/jpeg" }),
+    );
+    formData.append(
+      "images",
+      new File([new Uint8Array(7 * 1024 * 1024)], "two.jpg", { type: "image/jpeg" }),
+    );
+
+    const response = await POST(
+      new Request("http://localhost:3000/api/check-ins/extract", {
+        method: "POST",
+        body: formData,
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(payload).toMatchObject({
+      stage: "request_validation",
+      retryable: true,
+      error: "Upload payload is too large. Retake lower-resolution photos or choose fewer images.",
+    });
+    expect(mockCreateDraftCheckIn).not.toHaveBeenCalled();
+    expect(mockUploadBucketFile).not.toHaveBeenCalled();
+    expect(mockExtractCheckInFromImages).not.toHaveBeenCalled();
+  });
 });

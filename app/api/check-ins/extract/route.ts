@@ -6,7 +6,10 @@ import {
   logWorkflowError,
   logWorkflowEvent,
 } from "@/lib/check-ins/errors";
-import { MAX_IMAGE_COUNT } from "@/lib/check-ins/constants";
+import {
+  MAX_IMAGE_COUNT,
+  MAX_UPLOAD_TOTAL_BYTES,
+} from "@/lib/check-ins/constants";
 import {
   createDraftCheckIn,
   getCheckInByExtractRequestId,
@@ -202,6 +205,27 @@ export async function POST(request: Request) {
           stage: "request_validation",
           retryable: true,
           details: `The request included ${files.length} images.`,
+          step: "request_validation",
+        },
+        { status: 400 },
+      );
+    }
+
+    const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+    if (totalBytes > MAX_UPLOAD_TOTAL_BYTES) {
+      logExtractEvent("request_validation_failed", {
+        extractRequestId,
+        fileCount: files.length,
+        totalBytes,
+        maxTotalBytes: MAX_UPLOAD_TOTAL_BYTES,
+        reason: "total_upload_size_exceeded",
+      });
+      return NextResponse.json(
+        {
+          error: "Upload payload is too large. Retake lower-resolution photos or choose fewer images.",
+          stage: "request_validation",
+          retryable: true,
+          details: `Upload total was ${totalBytes} bytes and exceeds the ${MAX_UPLOAD_TOTAL_BYTES} byte limit.`,
           step: "request_validation",
         },
         { status: 400 },
