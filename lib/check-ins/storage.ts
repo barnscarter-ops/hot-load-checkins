@@ -42,3 +42,23 @@ export async function downloadBucketFile(
 
   return Buffer.from(await data.arrayBuffer());
 }
+
+export async function createSignedBucketUrl(
+  storagePath: string,
+  expiresInSeconds = 300,
+) {
+  const env = getServerEnv();
+  const supabase = createSupabaseAdminClient();
+
+  const { data, error } = await supabase.storage
+    .from(env.CHECKIN_STORAGE_BUCKET)
+    .createSignedUrl(storagePath, expiresInSeconds);
+
+  if (error || !data?.signedUrl) {
+    throw new Error(
+      `Storage signed URL failed: ${error?.message ?? "No signed URL returned."}`,
+    );
+  }
+
+  return data.signedUrl;
+}

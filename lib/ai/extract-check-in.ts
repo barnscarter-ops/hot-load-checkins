@@ -38,7 +38,7 @@ const extractionSchema = z.object({
 });
 
 export async function extractCheckInFromImages(
-  images: Array<{ buffer: Buffer; mimeType: string }>,
+  images: Array<{ url: string }>,
 ): Promise<{
   fields: CheckInFields;
   confidenceByField: ConfidenceMap;
@@ -69,7 +69,7 @@ export async function extractCheckInFromImages(
           ...images.map((image) => ({
             type: "image_url" as const,
             image_url: {
-              url: `data:${image.mimeType};base64,${image.buffer.toString("base64")}`,
+              url: image.url,
               detail: "high" as const,
             },
           })),
