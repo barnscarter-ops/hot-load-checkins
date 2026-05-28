@@ -7,6 +7,7 @@ const mockGetCheckInByExtractRequestId = vi.fn();
 const mockCreateDraftCheckIn = vi.fn();
 const mockUpdateSubmissionArtifacts = vi.fn();
 const mockUploadBucketFile = vi.fn();
+const mockCreateSignedBucketUrl = vi.fn();
 const mockReplaceDraftImages = vi.fn();
 const mockExtractCheckInFromImages = vi.fn();
 const mockUpdateExtractionResult = vi.fn();
@@ -25,6 +26,7 @@ vi.mock("@/lib/check-ins/repository", () => ({
 
 vi.mock("@/lib/check-ins/storage", () => ({
   uploadBucketFile: mockUploadBucketFile,
+  createSignedBucketUrl: mockCreateSignedBucketUrl,
 }));
 
 vi.mock("@/lib/ai/extract-check-in", () => ({
@@ -62,6 +64,9 @@ describe("POST /api/check-ins/extract", () => {
     mockCreateDraftCheckIn.mockResolvedValue(draft);
     mockUpdateSubmissionArtifacts.mockResolvedValue(undefined);
     mockUploadBucketFile.mockResolvedValue(undefined);
+    mockCreateSignedBucketUrl.mockResolvedValue(
+      "https://storage.example.test/signed/ticket.jpg",
+    );
     mockReplaceDraftImages.mockResolvedValue(undefined);
     mockExtractCheckInFromImages.mockResolvedValue({
       fields: extractedRecord.fields,
@@ -112,8 +117,13 @@ describe("POST /api/check-ins/extract", () => {
       }),
     );
     expect(mockUploadBucketFile).toHaveBeenCalledTimes(1);
+    expect(mockCreateSignedBucketUrl).toHaveBeenCalledWith(
+      expect.stringMatching(/^check-ins\/draft-1\/source\/.+-1-ticket\.jpg$/),
+    );
     expect(mockReplaceDraftImages).toHaveBeenCalledTimes(1);
-    expect(mockExtractCheckInFromImages).toHaveBeenCalledTimes(1);
+    expect(mockExtractCheckInFromImages).toHaveBeenCalledWith([
+      { url: "https://storage.example.test/signed/ticket.jpg" },
+    ]);
     expect(mockUpdateExtractionResult).toHaveBeenCalledWith(
       expect.objectContaining({
         checkInId: "draft-1",
@@ -151,6 +161,9 @@ describe("POST /api/check-ins/extract", () => {
     mockCreateDraftCheckIn.mockResolvedValue(draft);
     mockUpdateSubmissionArtifacts.mockResolvedValue(undefined);
     mockUploadBucketFile.mockResolvedValue(undefined);
+    mockCreateSignedBucketUrl.mockResolvedValue(
+      "https://storage.example.test/signed/ticket.jpg",
+    );
     mockReplaceDraftImages.mockResolvedValue(undefined);
     mockExtractCheckInFromImages.mockRejectedValue(new Error("OpenAI timeout"));
 
